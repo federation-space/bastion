@@ -2,7 +2,8 @@
   homeserver =
     { config, pkgs, ... }:
     {
-      deployment.targetHost = "192.168.0.113";
+      # FIXME replace with your homeserver's IP on your LAN
+      deployment.targetHost = "FIXME";
       services.znc = {
         config.User.satoshi = {
           # Definition of a network. A user can have multiple networks.
