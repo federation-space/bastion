@@ -52,7 +52,7 @@
       # Note: The private key can also be included inline via the privateKey option,
       # but this makes the private key world-readable; thus, using privateKeyFile is
       # recommended.
-      privateKeyFile = "/etc/nixos/keys/wg-subspace.private";
+      privateKeyFile = "/run/keys/wg-subspace";
 
       peers = [
         # For a client configuration, one peer entry for the server will suffice.
@@ -71,7 +71,7 @@
       # The port that Wireguard listens to. Must be accessible by the client.
       listenPort = 51820;
 
-      privateKeyFile = "/etc/nixos/keys/wg-transporter.private";
+      privateKeyFile = "/run/keys/wg-transporter";
     };
   };
 
@@ -139,4 +139,3 @@
   system.stateVersion = "19.09"; # Did you read the comment?
 
 }
-
