@@ -7,12 +7,14 @@
       ./hardware-configuration.nix
     ];
 
+  fileSystems."/".device = pkgs.lib.mkForce "/dev/disk/by-label/nixos";
+
   # Use the GRUB 2 boot loader.
   boot.loader.grub.enable = true;
   boot.loader.grub.version = 2;
-  boot.loader.grub.device = "/dev/sda";
+  boot.loader.grub.devices = [ "/dev/sda" "/dev/sdb" ];
 
-  networking.hostName = "bastion"; # Define your hostname.
+  networking.hostName = "homeserver"; # Define your hostname.
 
   networking.interfaces.enp1s0.useDHCP = true;
   networking.interfaces.enp2s0.useDHCP = true;
