@@ -41,8 +41,18 @@
 
   networking.firewall = {
     enable = true;
-    allowedTCPPorts = [ config.services.thelounge.port ];
-    allowedUDPPorts = [ config.networking.wireguard.interfaces.wg-transporter.listenPort ];
+    allowedTCPPorts =
+      [ config.services.thelounge.port
+        # Samba
+        139 445
+        # NFSv4
+        2049
+      ];
+    allowedUDPPorts =
+      [ config.networking.wireguard.interfaces.wg-transporter.listenPort
+        # Samba
+        137 138
+      ];
   };
 
   networking.wireguard.interfaces = {
@@ -122,6 +132,55 @@
         tls = true;
         rejectUnauthorized = false;
         username = "satoshi/freenode";
+      };
+    };
+  };
+
+  fileSystems."/export/data" = {
+    device = "/data";
+    options = [ "bind" ];
+  };
+
+
+  services = {
+    nfs.server = {
+      enable = true;
+      exports = ''
+        /export         *(insecure,rw,sync,no_subtree_check,crossmnt,fsid=0,all_squash)
+        /export/data    *(insecure,rw,sync,no_subtree_check,all_squash)
+      '';
+    };
+    samba = {
+      enable = true;
+      extraConfig = ''
+        min protocol = SMB2
+        vfs objects = catia fruit streams_xattr
+        fruit:aapl = yes
+        fruit:metadata = stream
+        fruit:model = TimeMachine
+        fruit:posix_rename = yes
+        fruit:veto_appledouble = no
+        fruit:wipe_intentionally_left_blank_rfork = yes
+        fruit:delete_empty_adfiles = yes
+      '';
+      shares = {
+        time-machine = {
+          path = "/home/satoshi/time-machine";
+          "valid users" = "satoshi";
+          public = "no";
+          writeable = "yes";
+          "force user" = "satoshi";
+          "vfs objects" = "catia fruit streams_xattr";
+          "fruit:time machine" = "yes";
+        };
+      };
+    };
+    avahi = {
+      enable = true;
+      nssmdns = true;
+      publish = {
+        enable = true;
+        userServices = true;
       };
     };
   };
