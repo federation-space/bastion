@@ -39,14 +39,22 @@
   # Enable the OpenSSH daemon.
   services.openssh.enable = true;
 
+  boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
+
   networking.firewall = {
     enable = true;
     allowedTCPPorts =
       [ config.services.thelounge.port
+        config.services.gitea.httpPort
+        config.services.bitwarden_rs.config.rocketPort
         # Samba
         139 445
         # NFSv4
         2049
+        # Bitcoind
+        8333
+        # Restic
+        8000
       ];
     allowedUDPPorts =
       [ config.networking.wireguard.interfaces.wg-transporter.listenPort
@@ -63,7 +71,7 @@
       # Note: The private key can also be included inline via the privateKey option,
       # but this makes the private key world-readable; thus, using privateKeyFile is
       # recommended.
-      privateKeyFile = "/run/keys/wg-subspace";
+      privateKeyFile = config.deployment.keys.wg-subspace.path;
 
       peers = [
         # For a client configuration, one peer entry for the server will suffice.
@@ -82,7 +90,7 @@
       # The port that Wireguard listens to. Must be accessible by the client.
       listenPort = 51820;
 
-      privateKeyFile = "/run/keys/wg-transporter";
+      privateKeyFile = config.deployment.keys.wg-transporter.path;
     };
   };
 
@@ -99,7 +107,7 @@
         Port = 6697;
         SSL = true;
       };
-      LoadModule = [ "adminlog" "palaver" "playback" ]; # Write access logs to ~znc/moddata/adminlog/znc.log. 
+      LoadModule = [ "adminlog" "palaver" "playback" "log" ]; # Write access logs to ~znc/moddata/adminlog/znc.log.
       User.satoshi = {
         Admin = true;
         Pass.password = {
@@ -112,10 +120,11 @@
           LoadModule = [ "nickserv" ];
           JoinDelay = 2; # Avoid joining channels before authenticating.
         };
-        extraConfig = [
-          "AutoClearChanBuffer = false"
-          "AutoClearQueryBuffer = false"
-        ];
+        AutoClearChanBuffer = false;
+        AutoClearQueryBuffer = false;
+        ChanBufferSize = -1;
+        QueryBufferSize = -1;
+        MaxQueryBuffers = 0;
       };
     };
   };
@@ -136,20 +145,12 @@
     };
   };
 
-  fileSystems."/export/data" = {
-    device = "/data";
-    options = [ "bind" ];
-  };
+  ##############
+  # Data Shares
+  ##############
 
-
+  # Samba (macOS Time Machine)
   services = {
-    nfs.server = {
-      enable = true;
-      exports = ''
-        /export         *(insecure,rw,sync,no_subtree_check,crossmnt,fsid=0,all_squash)
-        /export/data    *(insecure,rw,sync,no_subtree_check,all_squash)
-      '';
-    };
     samba = {
       enable = true;
       extraConfig = ''
@@ -175,6 +176,7 @@
         };
       };
     };
+    # Avahi allows autodetection of services on macOS
     avahi = {
       enable = true;
       nssmdns = true;
@@ -183,6 +185,69 @@
         userServices = true;
       };
     };
+  };
+
+  systemd.tmpfiles.rules = [
+    "d '${config.services.samba.shares.time-machine.path}' 0755 '${config.services.samba.shares.time-machine."force user"}' '${config.users.users.${config.services.samba.shares.time-machine."force user"}.group}' - -"
+    "d '/export' 0755 'nobody' '${config.users.users.nobody.group}' - -"
+    "d '/data' 0755 'nobody' '${config.users.users.nobody.group}' - -"
+  ];
+
+  # NFS (Normal data share)
+  fileSystems."/export/data" = {
+    device = "/data";
+    options = [ "bind" ];
+  };
+
+  systemd.services.rpc-statd.enable = pkgs.lib.mkForce false; # No longer needed with NFSv4
+
+  services = {
+    nfs.server = {
+      enable = true;
+      exports = ''
+        /export         *(insecure,rw,sync,no_subtree_check,crossmnt,fsid=0,all_squash)
+        /export/data    *(insecure,rw,sync,no_subtree_check,all_squash)
+      '';
+    };
+  };
+
+  # Restic (Linux backup server)
+  services.restic.server = {
+    enable = true;
+    appendOnly = true;
+  };
+
+
+  # Gitea (Self-hosted GitHub)
+  services.gitea = {
+    enable = true;
+    database.passwordFile = config.deployment.keys.gitea-dbpassword.path;
+  };
+
+
+  # Bitwarden (Self-hosted Password Manager)
+  services.bitwarden_rs = {
+    enable = true;
+    config = {
+      rocketPort = 8222;
+    };
+  };
+
+  # Bitcoin (Bitcoin Core)
+  services.bitcoind = {
+    enable = true;
+    dbCache = 2000;
+    extraConfig = ''
+      server=1
+      listenonion=0
+      rpcauth=satoshi:8f6c93a5e35a6721c949f124d23b7959$$1b802ba3ed81d8c16b0729c233c62ddd7ddb988fe64ece067f130ba451a21d9f
+      rpcbind=0.0.0.0:8332
+      rpcallowip=10.42.0.0/24
+      peerbloomfilters=1
+      bind=0.0.0.0:8333
+      zmqpubrawblock=tcp://0.0.0.0:28332
+      zmqpubrawtx=tcp://0.0.0.0:28333
+    '';
   };
 
   users.users.satoshi = {
