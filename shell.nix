@@ -11,12 +11,18 @@ pkgs.stdenv.mkDerivation rec {
     nixops # So that we can run `nixops` commands
     figlet # So that we can display a nice banner
     wireguard-tools # So that we can generate wireguard keys
-    znc # So that we can generate ZNC keys
+    apg # So that we can generate passwords
+    arp-scan # So that we can search for homeservers
+    iproute # some network introspection
+    coreutils
+    unixtools.column
+    python3
   ];
 
   shellHook = ''
     export NIX_PATH="nixpkgs=${nixpkgs}:nixos-hardware=${nixos-hardware}"
     export NIXOPS_DEPLOYMENT=homeserver
+    export PATH="''${PWD}/bin:''${PATH}"
     # ssh-agent and nixops don't play well together (see
     # https://github.com/NixOS/nixops/issues/256). I'm getting `Received disconnect
     # from 10.1.1.200 port 22:2: Too many authentication failures` if I have a few

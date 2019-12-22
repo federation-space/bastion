@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+CLIENTS_DIR="${CLIENTS_DIR:-network/clients}"
+
+transporter_peers() {
+    local rv='['
+    rv+=' '
+    for client in "${CLIENTS_DIR}"/*; do
+        rv+=$(transporter_peer "$client")
+        rv+=' '
+    done
+    rv+=' '
+    rv+=']'
+    echo "$rv"
+}
+
+transporter_peer() {
+    local rv='{'
+    rv+=' '
+    rv+='publicKey = "'"$(< "${1}/wg-pubkey")"'";'
+    rv+=' '
+    rv+='allowedIPs = [ "'"$(< "${1}/ip")"'" ];'
+    rv+=' '
+    rv+='}'
+    echo "$rv"
+}
+
+transporter_peers

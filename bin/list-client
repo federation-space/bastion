@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+# $0
+if [ "$#" -ne 0 ]; then
+    echo "Illegal number of parameters"
+fi
+
+CLIENTS_DIR="${CLIENTS_DIR:-network/clients}"
+
+client_line_csv() {
+    echo "$(basename "$1"),$(< "${1}/created"),$(< "${1}/ip"),$(< "${1}/wg-pubkey")"
+}
+
+clients_csv() {
+    for client_dir in "$CLIENTS_DIR"/*; do
+        client_line_csv "$client_dir"
+    done
+}
+
+clients_csv \
+    | sort --field-separator ',' -k2nr,2 -k3Vr,3 \
+    | column --separator ',' \
+             --table --table-columns NAME,CREATED,ALLOWED_IP,WG_PUBKEY

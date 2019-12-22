@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+nixops set-args --deployment homeserver \
+                --arg wgTransporterPeers "$(./bin/transporter-peers)" \
+                --arg wgSubspaceIP "$(< ./network/federation/ip)" \
+                --argstr targetHost "$(< ./network/homeserver/ether_iface_ip)" \
+                --argstr homeDomain "$(< ./network/homeserver/home_domain)"
+
+nixops deploy --deployment homeserver
+nixops info --deployment homeserver

@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+
+if __name__ == '__main__':
+    import glob
+    import sys
+    from ipaddress import IPv4Network, IPv4Address
+
+    hosts_left = set(IPv4Network('10.42.0.0/24'))
+    hosts_left -= {
+        IPv4Address('10.42.0.0'),   # Used to represent the whole network
+        IPv4Address('10.42.0.1'),   # Homeserver reserved
+        IPv4Address('10.42.0.255')  # Apps might confuse for broadcast
+    }
+
+    for ip_file in glob.glob("{}/*/ip".format(sys.argv[1])):
+        with open(ip_file, 'r') as f:
+            network_to_remove = IPv4Network(f.read().strip())
+            hosts_left -= set(network_to_remove)
+
+    for addr in sorted(hosts_left):
+        print(addr)

@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+# $0 CLIENTNAME
+if [ "$#" -ne 1 ]; then
+    echo "Illegal number of parameters"
+fi
+
+CLIENTS_DIR="${CLIENTS_DIR:-network/clients}"
+curr_client_dir="${CLIENTS_DIR}/${1}"
+
+if [ -e "$curr_client_dir" ]; then
+    rm -r "$curr_client_dir"
+else
+    echo "Client '$1' doesn't exist."
+    exit 1
+fi
