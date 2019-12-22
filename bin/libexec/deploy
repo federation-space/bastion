@@ -2,6 +2,8 @@
 set -eo pipefail
 
 FEDERATION_IP_FILE="${FEDERATION_IP_FILE:-network/federation/ip}"
+FEDERATION_PORT_FILE="${FEDERATION_PORT_FILE:-network/federation/port}"
+
 ETHER_IP_FILE="${ETHER_IP_FILE:-network/homeserver/ether_iface_ip}"
 HOME_DOMAIN_FILE="${HOME_DOMAIN_FILE:-network/homeserver/home_domain}"
 
@@ -10,7 +12,9 @@ LIBEXEC_DIR="${LIBEXEC_DIR:-$(dirname "${BASH_SOURCE[0]}")}"
 nixops set-args --deployment homeserver \
                 --arg wgTransporterPeers "$("$LIBEXEC_DIR"/transporter-peers)" \
                 --arg wgSubspaceIP "$(< "$FEDERATION_IP_FILE")" \
+                --arg wgSubspacePort "$(< "$FEDERATION_PORT_FILE")" \
                 --argstr targetHost "$(< "$ETHER_IP_FILE")" \
                 --argstr homeDomain "$(< "$HOME_DOMAIN_FILE")"
+
 nixops deploy --deployment homeserver
 nixops info --deployment homeserver

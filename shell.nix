@@ -19,7 +19,7 @@ pkgs.stdenv.mkDerivation rec {
     python3
     bashInteractive
     git
-    sudo
+    findutils
   ];
 
   shellHook = ''
@@ -32,5 +32,6 @@ pkgs.stdenv.mkDerivation rec {
     # keys already added to my ssh-agent.
     unset SSH_AUTH_SOCK
     figlet "Bastion Homeserver"
+    find bin -type f -exec chmod +x {} \;
   '';
 }

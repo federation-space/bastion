@@ -1,4 +1,4 @@
-{ wgTransporterPeers, wgSubspaceIP, targetHost, homeDomain, ... } : {
+{ wgTransporterPeers, wgSubspaceIP, wgSubspacePort, targetHost, homeDomain, ... } : {
   network.description = "Bastion Homeserver";
 
   homeserver =
@@ -34,6 +34,7 @@
         };
         wg-transporter = {
           peers = wgTransporterPeers;
+          listenPort = wgSubspacePort;
         };
       };
       users.users = {

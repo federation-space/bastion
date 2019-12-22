@@ -30,18 +30,31 @@ cmd_update() {
     "$LIBEXEC_DIR"/hsctl-init "$@"
 }
 
+cmd_needs_init() {
+    "$LIBEXEC_DIR"/hsctl-init
+    case "$1" in
+	      pair|add) shift;	"$LIBEXEC_DIR"/pair-client "$@" ;; # $0 NAME
+	      unpair|rm|remove) shift;	"$LIBEXEC_DIR"/rm-client "$@" ;; # $0 NAME
+	      deploy) shift;			"$LIBEXEC_DIR"/deploy "$@" ;;
+	      *)				cmd_usage "$@" ; exit 42 ;;
+    esac
+}
+
 LIBEXEC_DIR="${LIBEXEC_DIR:-$(dirname "${BASH_SOURCE[0]}")/libexec}"
 PROGRAM="${0##*/}"
 COMMAND="$1"
+
+tmp_rel="$(realpath --relative-to="$PWD" "$LIBEXEC_DIR")"
+if [ "$tmp_rel" != "bin/libexec" ]; then
+    echo "Please execute 'hsctl' from the base of the git repository" >&2
+    exit 1
+fi
 
 case "$1" in
 	  init) shift;			"$LIBEXEC_DIR"/hsctl-init "$@" ;; # $0
 	  help|--help|-h) shift;				cmd_usage "$@" ;;
     version|--version|-v) shift;	cmd_version "$@" ;;
-	  pair|add) shift;	"$LIBEXEC_DIR"/pair-client "$@" ;; # $0 NAME
-	  unpair|rm|remove) shift;	"$LIBEXEC_DIR"/rm-client "$@" ;; # $0 NAME
-	  deploy) shift;			"$LIBEXEC_DIR"/deploy "$@" ;;
 	  update) shift;			cmd_update "$@" ;;
-	  *)				cmd_usage "$@" ; exit 42 ;;
+	  *)				cmd_needs_init "$@" ;;
 esac
 exit 0

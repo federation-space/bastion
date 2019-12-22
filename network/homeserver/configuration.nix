@@ -27,7 +27,7 @@
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-    wget mkpasswd git
+    wget mkpasswd git config.services.samba.package
     (vim_configurable.customize {
       name = "vim";
       vimrcConfig.packages.myplugins = with vimPlugins; {
@@ -40,6 +40,7 @@
 
   # Enable the OpenSSH daemon.
   services.openssh.enable = true;
+  services.openssh.passwordAuthentication = false;
 
   boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
 
@@ -91,9 +92,6 @@
     # homeserver <-> your device (iOS/Linux/macOS)
     wg-transporter = {
       ips = [ "10.42.0.1/24" ];
-
-      listenPort = 51820;
-
       privateKeyFile = config.deployment.keys.wg-transporter.path;
     };
   };
@@ -228,13 +226,6 @@
       verbosity: 1
 
       do-ip6: no
-
-      private-address: 10.0.0.0/8
-      private-address: 172.16.0.0/12
-      private-address: 192.168.0.0/16
-      private-address: 169.254.0.0/16
-
-      local-zone: "${homeDomain}." static
 
       local-data: "${config.services.gitea.domain}.  IN A 10.42.0.1"
       local-data: "restic.${homeDomain}.  IN A 10.42.0.1"

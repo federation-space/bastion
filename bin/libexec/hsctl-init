@@ -9,7 +9,6 @@ ETHER_IP_FILE="${ETHER_IP_FILE:-network/homeserver/ether_iface_ip}"
 ETHER_MAC_FILE="${ETHER_MAC_FILE:-network/homeserver/ether_iface_mac}"
 FEDERATION_IP_FILE="${FEDERATION_IP_FILE:-network/federation/ip}"
 FEDERATION_PORT_FILE="${FEDERATION_PORT_FILE:-network/federation/port}"
-
 LIBEXEC_DIR="${LIBEXEC_DIR:-$(dirname "${BASH_SOURCE[0]}")}"
 
 if [ ! -e "$ETHER_MAC_FILE" ]; then
@@ -72,5 +71,3 @@ read -e -p 'What port were you allocated? ' port
 echo "${ip}/128" > "$FEDERATION_IP_FILE"
 echo "$port" > "$FEDERATION_PORT_FILE"
 fi
-
-echo 'Ready to deploy'
