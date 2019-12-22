@@ -105,42 +105,6 @@
   };
 
 
-  # services.znc = {
-  #   enable = false;
-  #   mutable = false;
-  #   useLegacyConfig = false;
-  #   openFirewall = true;
-  #   modulePackages = [ pkgs.zncModules.palaver pkgs.zncModules.playback ];
-  #   config = {
-  #     Listener.l = {
-  #       Host = "0.0.0.0";
-  #       AllowIRC = true;
-  #       AllowWeb = false;
-  #       Port = 6697;
-  #       SSL = true;
-  #     };
-  #     LoadModule = [ "adminlog" "palaver" "playback" "log" ]; # Write access logs to ~znc/moddata/adminlog/znc.log.
-  #     User.satoshi = {
-  #       Admin = true;
-  #       Pass.password = {
-  #         Method = "sha256";
-  #         Hash = "c572c4c4ccd5b39294acf759a566c11563f994e66c82bd4bba11e25a52c2c193";
-  #         Salt = "hUG3/o,/6obZ:a+.PZTD";
-  #       };
-  #       Network.freenode = {
-  #         Chan = { "#nixos" = {}; "#nixos-wiki" = {}; };
-  #         LoadModule = [ "nickserv" ];
-  #         JoinDelay = 2; # Avoid joining channels before authenticating.
-  #       };
-  #       AutoClearChanBuffer = false;
-  #       AutoClearQueryBuffer = false;
-  #       ChanBufferSize = -1;
-  #       QueryBufferSize = -1;
-  #       MaxQueryBuffers = 0;
-  #     };
-  #   };
-  # };
-
   systemd.services.thelounge = {
     after = [ "unbound.service" ];
     wants = [ "unbound.service" ];
@@ -368,10 +332,6 @@
       zmqpubrawtx=tcp://0.0.0.0:28333
     '';
   };
-
-  # services.nextcloud = {
-    
-  # };
 
   users.users.satoshi = {
     isNormalUser = true;
