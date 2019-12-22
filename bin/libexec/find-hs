@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -eo pipefail
 
 possible_interfaces() {
     ip -j -p link show up | jq -r '.[]  | select(.operstate == "UP") | select(.flags | index("UP")) | select(.flags | index("NOARP") | not) | select(.link_type != "loopback") | select(.ifname != null) | .ifname'

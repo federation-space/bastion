@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -eo pipefail
 
 CLIENTS_DIR="${CLIENTS_DIR:-network/clients}"
 

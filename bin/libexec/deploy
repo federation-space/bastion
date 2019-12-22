@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -eo pipefail
 
 FEDERATION_IP_FILE="${FEDERATION_IP_FILE:-network/federation/ip}"
 ETHER_IP_FILE="${ETHER_IP_FILE:-network/homeserver/ether_iface_ip}"

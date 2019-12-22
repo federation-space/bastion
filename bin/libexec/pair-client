@@ -25,6 +25,7 @@ privkey="$(wg genkey)"
 cat <<EOF
 [Interface]
 Address = ${ip}/32
+DNS = 10.42.0.1
 PrivateKey = ${privkey}
 
 [Peer]

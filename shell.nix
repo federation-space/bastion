@@ -19,6 +19,7 @@ pkgs.stdenv.mkDerivation rec {
     python3
     bashInteractive
     git
+    sudo
   ];
 
   shellHook = ''

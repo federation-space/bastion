@@ -9,22 +9,25 @@ cmd_usage() {
 	cat <<-_EOF
 	Usage:
 	    $PROGRAM init
-	        Initialize new password storage and use gpg-id for encryption.
-	        Selectively reencrypt existing passwords using new gpg-id.
-	    $PROGRAM pair pass-name
-	        Show existing password and optionally put it on the clipboard.
-	        If put on the clipboard, it will be cleared in $CLIP_TIME seconds.
-	    $PROGRAM unpair pass-name
-	        Search for password files containing search-string when decrypted.
+	        Initialize a new homeserver deployment. Meant to be invoked
+	        interactively.
+	    $PROGRAM pair client-name
+	        Pair a new client to the homeserver. Meant to be invoked interactively.
+	    $PROGRAM unpair client-name
+	        Unpair an existing client from the homeserver.
 	    $PROGRAM deploy
-	        Insert new password. Optionally, echo the password back to the console
-	        during entry. Or, optionally, the entry may be multiline. Prompt before
-	        overwriting existing password unless forced.
+	        Deploy the current configuration to the homeserver.
 	    $PROGRAM help
 	        Show this text.
 	    $PROGRAM version
 	        Show version information.
 	_EOF
+}
+
+cmd_update() {
+    git pull
+    echo "hsctl updated to: $(cmd_version)"
+    "$LIBEXEC_DIR"/hsctl-init "$@"
 }
 
 LIBEXEC_DIR="${LIBEXEC_DIR:-$(dirname "${BASH_SOURCE[0]}")/libexec}"
@@ -38,7 +41,7 @@ case "$1" in
 	  pair|add) shift;	"$LIBEXEC_DIR"/pair-client "$@" ;; # $0 NAME
 	  unpair|rm|remove) shift;	"$LIBEXEC_DIR"/rm-client "$@" ;; # $0 NAME
 	  deploy) shift;			"$LIBEXEC_DIR"/deploy "$@" ;;
-	  # update) shift;			cmd_git "$@" ;;
+	  update) shift;			cmd_update "$@" ;;
 	  *)				cmd_usage "$@" ; exit 42 ;;
 esac
 exit 0
