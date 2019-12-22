@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+# $0 NAME
+if [ "$#" -ne 1 ]; then
+    echo "Illegal number of parameters" >&2
+    exit 1
+fi
+
+CLIENTS_DIR="${CLIENTS_DIR:-network/clients}"
+curr_client_dir="${CLIENTS_DIR}/${1}"
+
+if [ -e "$curr_client_dir" ]; then
+    echo "Client '$1' already exists." >&2
+    exit 1
+fi
+
+WG_TRANSPORTER_KEY_FILE="${WG_TRANSPORTER_KEY_FILE:-network/secrets/wg-transporter}"
+FEDERATION_PORT_FILE="${FEDERATION_PORT_FILE:-network/federation/port}"
+
+LIBEXEC_DIR="${LIBEXEC_DIR:-$(dirname "${BASH_SOURCE[0]}")}"
+ip="$("$LIBEXEC_DIR"/free-transporter-ips "$CLIENTS_DIR" | sort -n -t . -k 1,1 -k 2,2 -k 3,3 -k 4,4 | head -n1)/32"
+privkey="$(wg genkey)"
+
+cat <<EOF
+[Interface]
+Address = ${ip}/32
+PrivateKey = ${privkey}
+
+[Peer]
+PublicKey = $(wg pubkey < "${WG_TRANSPORTER_KEY_FILE}")
+AllowedIPs = 10.42.0.0/24
+Endpoint = federation.space:$(< "$FEDERATION_PORT_FILE")
+PersistentKeepalive = 25
+EOF
+
+read -p "Press enter when the client is configured"
+"$LIBEXEC_DIR"/add-client "$curr_client_dir" "$ip" "$(echo "$privkey" | wg pubkey)"

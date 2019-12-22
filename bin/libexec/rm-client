@@ -3,7 +3,8 @@ set -eo pipefail
 
 # $0 CLIENTNAME
 if [ "$#" -ne 1 ]; then
-    echo "Illegal number of parameters"
+    echo "Illegal number of parameters" >&2
+    exit 1
 fi
 
 CLIENTS_DIR="${CLIENTS_DIR:-network/clients}"

@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+# $0 CLIENTDIR IP WGPUBKEY
+if [ "$#" -ne 3 ]; then
+    echo "Illegal number of parameters" >&2
+    exit 1
+fi
+
+client_name="$(basename "$1")"
+
+if [ -e "$1" ]; then
+    echo "A client named '${client_name}' already exists. Exiting."
+    exit 1
+else
+    echo "Adding new client '${client_name}'..."
+    mkdir -p "$1"
+    (
+        cd "$1"
+
+        created="$(date +%s)"
+        echo "$created" > ./created
+
+        echo "$2" > ./ip
+
+        echo "$3" > ./wg-pubkey
+    )
+fi

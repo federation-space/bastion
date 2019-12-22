@@ -17,6 +17,8 @@ pkgs.stdenv.mkDerivation rec {
     coreutils
     unixtools.column
     python3
+    bashInteractive
+    git
   ];
 
   shellHook = ''

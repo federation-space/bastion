@@ -1,88 +1,44 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-WG_SUBSPACE_KEY_FILE="${WG_SUBSPACE_KEY_FILE:-network/secrets/wg-subspace}"
-WG_TRANSPORTER_KEY_FILE="${WG_TRANSPORTER_KEY_FILE:-network/secrets/wg-transporter}"
-GITEA_DBPASSWORD_FILE="${GITEA_DBPASSWORD_FILE:-network/secrets/gitea-dbpassword}"
-HOME_DOMAIN_FILE="${HOME_DOMAIN_FILE:-network/homeserver/home_domain}"
-ETHER_IP_FILE="${ETHER_IP_FILE:-network/homeserver/ether_iface_ip}"
-ETHER_MAC_FILE="${ETHER_MAC_FILE:-network/homeserver/ether_iface_mac}"
-
-cmd_init() {
-if [ ! -e "$ETHER_MAC_FILE" ]; then
-    echo "Searching for homeservers ARP-able from your ether interfaces..."
-    found="$(./bin/find-hs)"
-    if [ "$(echo "$found" | wc -l)" -eq 1 ]; then
-        echo "$found" | tr -s '[:space:]' ' ' | cut --delimiter=' ' --fields=2 > "$ETHER_MAC_FILE"
-    else
-        echo "We found multiple, here they are:"
-        echo "$found"
-        read -e -r -p 'Enter one of the MAC addresses: ' mac
-        echo "$mac" > "$ETHER_MAC_FILE"
-    fi
-fi
-
-if [ ! -e "$ETHER_IP_FILE" ]; then
-    found="$(./bin/find-hs "$(< "$ETHER_MAC_FILE")")"
-    if [ "$(echo "$found" | wc -l)" -eq 1 ]; then
-        echo "$found" | tr -s '[:space:]' ' ' | cut --delimiter=' ' --fields=1 > "$ETHER_IP_FILE"
-    else
-        echo "nope"
-        exit 1
-    fi
-fi
-
-if [ ! -d "network/secrets" ]; then
-    mkdir -p "network/secrets"
-fi
-
-orig_umask="$(umask)"
-umask 077
-if [ ! -e "$WG_TRANSPORTER_KEY_FILE" ]; then
-    wg genkey > "$WG_TRANSPORTER_KEY_FILE"
-fi
-if [ ! -e "$WG_SUBSPACE_KEY_FILE" ]; then
-    wg genkey > "$WG_SUBSPACE_KEY_FILE"
-fi
-if [ ! -e "$GITEA_DBPASSWORD_FILE" ]; then
-    apg -m 20 -x 20 -M Ncl -n 1 > "$GITEA_DBPASSWORD_FILE"
-fi
-umask "$orig_umask"
-
-if [ ! -e "$HOME_DOMAIN_FILE" ]; then
-    read -e -r -p 'What subdomain would you like to have under homeserver.net? (e.g. entering satoshi would indicate that you want satoshi.homeserver.net): ' subdomain
-    echo "${subdomain}.homeserver.net" > "$HOME_DOMAIN_FILE"
-fi
-
-if [ ! -d "network/federation" ]; then
-    mkdir -p "network/federation"
-fi
-
-if [[ ! -e "network/federation/ip" || ! -e "network/federation/port" ]]; then
-cat <<EOF
-Send the following to Carl over Signal or sth
-	Requested domain: $(< "$HOME_DOMAIN_FILE")
-	WireGuard Public Key: $(wg pubkey < "$WG_SUBSPACE_KEY_FILE")
-EOF
-read -e -r -i 'fd42::' -p 'What IP were you allocated? ' ip
-read -e -r -p 'What port were you allocated? ' port
-echo "${ip}/128" > network/federation/ip
-echo "$port" > network/federation/port
-fi
-
-echo 'Ready to deploy'
+cmd_version() {
+    git describe --always --dirty --broken
 }
 
+cmd_usage() {
+	cat <<-_EOF
+	Usage:
+	    $PROGRAM init
+	        Initialize new password storage and use gpg-id for encryption.
+	        Selectively reencrypt existing passwords using new gpg-id.
+	    $PROGRAM pair pass-name
+	        Show existing password and optionally put it on the clipboard.
+	        If put on the clipboard, it will be cleared in $CLIP_TIME seconds.
+	    $PROGRAM unpair pass-name
+	        Search for password files containing search-string when decrypted.
+	    $PROGRAM deploy
+	        Insert new password. Optionally, echo the password back to the console
+	        during entry. Or, optionally, the entry may be multiline. Prompt before
+	        overwriting existing password unless forced.
+	    $PROGRAM help
+	        Show this text.
+	    $PROGRAM version
+	        Show version information.
+	_EOF
+}
+
+LIBEXEC_DIR="${LIBEXEC_DIR:-$(dirname "${BASH_SOURCE[0]}")/libexec}"
 PROGRAM="${0##*/}"
 COMMAND="$1"
 
 case "$1" in
-	  init) shift;			cmd_init "$@" ;;
-	  # version|--version) shift;	cmd_version "$@" ;;
-	  # pair) shift;	cmd_pair "$@" ;;
-	  # unpair) shift;	cmd_unpair "$@" ;;
+	  init) shift;			"$LIBEXEC_DIR"/hsctl-init "$@" ;; # $0
+	  help|--help|-h) shift;				cmd_usage "$@" ;;
+    version|--version|-v) shift;	cmd_version "$@" ;;
+	  pair|add) shift;	"$LIBEXEC_DIR"/pair-client "$@" ;; # $0 NAME
+	  unpair|rm|remove) shift;	"$LIBEXEC_DIR"/rm-client "$@" ;; # $0 NAME
+	  deploy) shift;			"$LIBEXEC_DIR"/deploy "$@" ;;
 	  # update) shift;			cmd_git "$@" ;;
-	  # *)				cmd_usage "$@" ;;
-	  *)				exit 42 ;;
+	  *)				cmd_usage "$@" ; exit 42 ;;
 esac
 exit 0
