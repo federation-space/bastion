@@ -8,6 +8,7 @@ HOME_DOMAIN_FILE="${HOME_DOMAIN_FILE:-network/homeserver/home_domain}"
 ETHER_IP_FILE="${ETHER_IP_FILE:-network/homeserver/ether_iface_ip}"
 ETHER_MAC_FILE="${ETHER_MAC_FILE:-network/homeserver/ether_iface_mac}"
 
+cmd_init() {
 if [ ! -e "$ETHER_MAC_FILE" ]; then
     echo "Searching for homeservers ARP-able from your ether interfaces..."
     found="$(./bin/find-hs)"
@@ -68,3 +69,20 @@ read -e -r -p 'What port were you allocated? ' port
 echo "${ip}/128" > network/federation/ip
 echo "$port" > network/federation/port
 fi
+
+echo 'Ready to deploy'
+}
+
+PROGRAM="${0##*/}"
+COMMAND="$1"
+
+case "$1" in
+	  init) shift;			cmd_init "$@" ;;
+	  # version|--version) shift;	cmd_version "$@" ;;
+	  # pair) shift;	cmd_pair "$@" ;;
+	  # unpair) shift;	cmd_unpair "$@" ;;
+	  # update) shift;			cmd_git "$@" ;;
+	  # *)				cmd_usage "$@" ;;
+	  *)				exit 42 ;;
+esac
+exit 0
