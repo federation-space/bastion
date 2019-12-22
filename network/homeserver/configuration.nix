@@ -270,8 +270,6 @@
       private-address: 192.168.0.0/16
       private-address: 169.254.0.0/16
 
-      private-domain: carldong.io
-
       local-zone: "${homeDomain}." static
 
       local-data: "${config.services.gitea.domain}.  IN A 10.42.0.1"
@@ -279,8 +277,6 @@
       local-data: "bitwarden.${homeDomain}.  IN A 10.42.0.1"
       local-data: "irc.${homeDomain}.  IN A 10.42.0.1"
       local-data: "${config.services.tt-rss.virtualHost}.  IN A 10.42.0.1"
-
-      local-data: "homeserver.carldong.io.  IN A 192.168.0.42"
     '';
   };
 
@@ -298,7 +294,6 @@
 
     virtualHosts = {
       ${config.services.gitea.domain} = {
-        serverAliases = [ "gitea.carldong.io" ];
         forceSSL = true;
         enableACME = true;
         locations."/".proxyPass = "http://127.0.0.1:${toString(config.services.gitea.httpPort)}/";
@@ -307,7 +302,6 @@
         locations."/".proxyPass = "http://127.0.0.1:8000/";
       };
       "irc.${homeDomain}" = {
-        serverAliases = [ "irc.carldong.io" ];
         forceSSL = true;
         enableACME = true;
         locations."/" = {
@@ -316,7 +310,6 @@
         };
       };
       "bitwarden.${homeDomain}" = {
-        serverAliases = [ "bitwarden.carldong.io" ];
         forceSSL = true;
         enableACME = true;
         locations = {
@@ -333,7 +326,6 @@
         };
       };
       ${config.services.tt-rss.virtualHost} = {
-        serverAliases = [ "rss.carldong.io" ];
         forceSSL = true;
         enableACME = true;
       };
