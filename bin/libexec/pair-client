@@ -19,7 +19,7 @@ WG_TRANSPORTER_KEY_FILE="${WG_TRANSPORTER_KEY_FILE:-network/secrets/wg-transport
 FEDERATION_PORT_FILE="${FEDERATION_PORT_FILE:-network/federation/port}"
 
 LIBEXEC_DIR="${LIBEXEC_DIR:-$(dirname "${BASH_SOURCE[0]}")}"
-ip="$("$LIBEXEC_DIR"/free-transporter-ips "$CLIENTS_DIR" | sort -n -t . -k 1,1 -k 2,2 -k 3,3 -k 4,4 | head -n1)"
+ip="$("$LIBEXEC_DIR"/free-transporter-ips "$CLIENTS_DIR" | head -n1)"
 privkey="$(wg genkey)"
 
 HOME_DOMAIN_FILE="${HOME_DOMAIN_FILE:-network/homeserver/home_domain}"
