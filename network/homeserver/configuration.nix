@@ -18,6 +18,9 @@
   networking.interfaces.enp1s0.useDHCP = true;
   networking.interfaces.enp2s0.useDHCP = true;
   networking.interfaces.enp3s0.useDHCP = true;
+  boot.kernel.sysctl."net.ipv6.conf.enp1s0.disable_ipv6" = true;
+  boot.kernel.sysctl."net.ipv6.conf.enp2s0.disable_ipv6" = true;
+  boot.kernel.sysctl."net.ipv6.conf.enp3s0.disable_ipv6" = true;
 
   networking.resolvconf.enable = true;
   networking.resolvconf.dnsSingleRequest = true;

@@ -27,15 +27,5 @@
           };
         };
       };
-
-      # networking.wireguard.interfaces = {
-      #   wg-subspace = {
-      #     ips = [ wgSubspaceIP ];
-      #   };
-      #   wg-transporter = {
-      #     peers = wgTransporterPeers;
-      #     listenPort = wgSubspacePort;
-      #   };
-      # };
-    } // (import homeserver/configuration.nix { inherit config pkgs homeDomain; });
+    } // (import homeserver/configuration.nix { inherit config pkgs wgTransporterPeers wgSubspaceIP wgSubspacePort homeDomain; });
 }

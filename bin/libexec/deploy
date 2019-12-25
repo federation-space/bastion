@@ -19,7 +19,7 @@ if ! nixops info --deployment "$DEPLOYMENT" --no-eval --plain &> /dev/null; then
 fi
 
 nixops set-args --deployment "$DEPLOYMENT" \
---arg wgTransporterPeers "$("$LIBEXEC_DIR"/transporter-peers "$CLIENTS_DIR")" \
+                --arg wgTransporterPeers "$("$LIBEXEC_DIR"/transporter-peers "$CLIENTS_DIR")" \
                 --arg wgSubspaceIP "$(< "$FEDERATION_IP_FILE")" \
                 --arg wgSubspacePort "$(< "$FEDERATION_PORT_FILE")" \
                 --argstr targetHost "$(< "$ETHER_IP_FILE")" \
