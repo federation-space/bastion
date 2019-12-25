@@ -1,4 +1,4 @@
-{ config, pkgs, homeDomain, ... }:
+{ config, pkgs, wgTransporterPeers, wgSubspaceIP, wgSubspacePort, homeDomain, ... }:
 {
   imports =
     [ <nixos-hardware/pcengines/apu>
@@ -77,6 +77,8 @@
   networking.wireguard.interfaces = {
     # homeserver <-> federation.space
     wg-subspace = {
+      ips = [ wgSubspaceIP ];
+
       privateKeyFile = config.deployment.keys.wg-subspace.path;
 
       peers = [
@@ -92,7 +94,11 @@
     # homeserver <-> your device (iOS/Linux/macOS)
     wg-transporter = {
       ips = [ "10.42.0.1/24" ];
+      listenPort = wgSubspacePort;
+
       privateKeyFile = config.deployment.keys.wg-transporter.path;
+
+      peers = wgTransporterPeers;
     };
   };
 

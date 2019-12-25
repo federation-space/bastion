@@ -1,29 +1,33 @@
-#!/usr/bin/env bash
-set -eo pipefail
+#!/usr/bin/env python3
 
-CLIENTS_DIR="${CLIENTS_DIR:-network/clients}"
+import sys
+from pathlib import PosixPath
+from typing import List
 
-transporter_peers() {
-    local rv='['
-    rv+=' '
-    for client in "${CLIENTS_DIR}"/*; do
-        rv+=$(transporter_peer "$client")
-        rv+=' '
-    done
-    rv+=' '
-    rv+=']'
-    echo "$rv"
-}
 
-transporter_peer() {
-    local rv='{'
-    rv+=' '
-    rv+='publicKey = "'"$(< "${1}/wg-pubkey")"'";'
-    rv+=' '
-    rv+='allowedIPs = [ "'"$(< "${1}/ip")"'" ];'
-    rv+=' '
-    rv+='}'
-    echo "$rv"
-}
+def transporter_peers(clients_dir: PosixPath) -> List[str]:
+    if clients_dir.exists():
+        return [transporter_peer_entry(x) for x in clients_dir.iterdir() if x.is_dir()]
+    else:
+        print("Clients directory doesn't exist yet", file=sys.stderr)
+        return []
 
-transporter_peers
+
+def transporter_peer_entry(clients_dir: PosixPath) -> str:
+    public_key_path = PosixPath(clients_dir, "wg-pubkey")
+    allowed_ip_path = PosixPath(clients_dir, "ip")
+    return transporter_peer_line(public_key_path.read_text(),
+                                 allowed_ip_path.read_text())
+
+
+def transporter_peer_line(public_key: str, allowed_ip: str) -> str:
+    return f'{{ publicKey = "{public_key}"; allowedIPs = [ "{allowed_ip}" ]; }}'
+
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print("Illegal number of parameters", file=sys.stderr)
+        sys.exit(1)
+    else:
+        peers = transporter_peers(PosixPath(sys.argv[1]))
+        print(f'[ {" ".join(peers)} ]')

@@ -38,18 +38,18 @@ if [ ! -d "network/secrets" ]; then
     mkdir -p "network/secrets"
 fi
 
-orig_umask="$(umask)"
-umask 077
-if [ ! -e "$WG_TRANSPORTER_KEY_FILE" ]; then
-    wg genkey > "$WG_TRANSPORTER_KEY_FILE"
-fi
-if [ ! -e "$WG_SUBSPACE_KEY_FILE" ]; then
-    wg genkey > "$WG_SUBSPACE_KEY_FILE"
-fi
-if [ ! -e "$GITEA_DBPASSWORD_FILE" ]; then
-    apg -m 20 -x 20 -M Ncl -n 1 > "$GITEA_DBPASSWORD_FILE"
-fi
-umask "$orig_umask"
+(
+    umask 077
+    if [ ! -e "$WG_TRANSPORTER_KEY_FILE" ]; then
+        wg genkey > "$WG_TRANSPORTER_KEY_FILE"
+    fi
+    if [ ! -e "$WG_SUBSPACE_KEY_FILE" ]; then
+        wg genkey > "$WG_SUBSPACE_KEY_FILE"
+    fi
+    if [ ! -e "$GITEA_DBPASSWORD_FILE" ]; then
+        apg -m 20 -x 20 -M Ncl -n 1 > "$GITEA_DBPASSWORD_FILE"
+    fi
+)
 
 if [ ! -e "$HOME_DOMAIN_FILE" ]; then
     read -e -p 'What subdomain would you like to have under homeserver.net? (e.g. entering satoshi would indicate that you want satoshi.homeserver.net): ' subdomain

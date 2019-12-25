@@ -5,7 +5,9 @@ possible_interfaces() {
     ip -j -p link show up | jq -r '.[]  | select(.operstate == "UP") | select(.flags | index("UP")) | select(.flags | index("NOARP") | not) | select(.link_type != "loopback") | select(.ifname != null) | .ifname'
 }
 
-for i in $(possible_interfaces); do
-    sudo arp-scan --interface="$i" --localnet --plain | grep -E '^\S+\s+'"${1:-00:0d:b9:}"
-done
+{
+    for i in $(possible_interfaces); do
+        sudo arp-scan --interface="$i" --localnet --plain | grep -E '^\S+\s+'"${1:-00:0d:b9:}"
+    done
+} | sort --unique
 

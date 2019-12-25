@@ -28,14 +28,14 @@
         };
       };
 
-      networking.wireguard.interfaces = {
-        wg-subspace = {
-          ips = [ wgSubspaceIP ];
-        };
-        wg-transporter = {
-          peers = wgTransporterPeers;
-          listenPort = wgSubspacePort;
-        };
-      };
+      # networking.wireguard.interfaces = {
+      #   wg-subspace = {
+      #     ips = [ wgSubspaceIP ];
+      #   };
+      #   wg-transporter = {
+      #     peers = wgTransporterPeers;
+      #     listenPort = wgSubspacePort;
+      #   };
+      # };
     } // (import homeserver/configuration.nix { inherit config pkgs homeDomain; });
 }

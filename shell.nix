@@ -20,6 +20,8 @@ pkgs.stdenv.mkDerivation rec {
     bashInteractive
     git
     findutils
+    jq
+    qrencode
   ];
 
   shellHook = ''
