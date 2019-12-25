@@ -16,8 +16,8 @@ def transporter_peers(clients_dir: PosixPath) -> List[str]:
 def transporter_peer_entry(clients_dir: PosixPath) -> str:
     public_key_path = PosixPath(clients_dir, "wg-pubkey")
     allowed_ip_path = PosixPath(clients_dir, "ip")
-    return transporter_peer_line(public_key_path.read_text(),
-                                 allowed_ip_path.read_text())
+    return transporter_peer_line(public_key_path.read_text().rstrip('\n'),
+                                 allowed_ip_path.read_text().rstrip('\n'))
 
 
 def transporter_peer_line(public_key: str, allowed_ip: str) -> str:
