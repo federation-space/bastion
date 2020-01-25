@@ -6,7 +6,15 @@
       ./hardware-configuration.nix
     ];
 
-  fileSystems."/".device = pkgs.lib.mkForce "/dev/disk/by-label/nixos";
+  fileSystems."/" =
+    { device = "/dev/disk/by-label/nixos";
+      fsType = "ext4";
+    };
+
+  swapDevices =
+    [ { device = "/dev/disk/by-label/swap-sda2"; }
+      { device = "/dev/disk/by-label/swap-sdb2"; }
+    ];
 
   # Use the GRUB 2 boot loader.
   boot.loader.grub.enable = true;
