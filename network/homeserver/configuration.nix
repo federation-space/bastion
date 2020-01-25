@@ -26,11 +26,7 @@
   networking.interfaces.enp1s0.useDHCP = true;
   networking.interfaces.enp2s0.useDHCP = true;
   networking.interfaces.enp3s0.useDHCP = true;
-  boot.kernel.sysctl."net.ipv6.conf.enp1s0.disable_ipv6" = true;
-  boot.kernel.sysctl."net.ipv6.conf.enp2s0.disable_ipv6" = true;
-  boot.kernel.sysctl."net.ipv6.conf.enp3s0.disable_ipv6" = true;
 
-  networking.resolvconf.enable = true;
   networking.resolvconf.dnsSingleRequest = true;
 
   time.timeZone = "UTC";
@@ -58,23 +54,12 @@
   networking.firewall = {
     enable = true;
     allowedTCPPorts =
-      [ config.services.thelounge.port
-        config.services.gitea.httpPort
-        config.services.bitwarden_rs.config.rocketPort
-        # Samba
+      [ # Samba
         139 445
-        # NFSv4
-        2049
         # Bitcoind
-        8333
-        # Restic
-        8000
+        8332 8333
         # Nginx
         80 443
-        # temp esplora
-        8888
-        # electrs
-        7000 50001
       ];
     allowedUDPPorts =
       [ config.networking.wireguard.interfaces.wg-transporter.listenPort
@@ -115,15 +100,25 @@
 
   # For resolving federation.space
   systemd.services.wireguard-wg-subspace = {
-    after = [ "unbound.service" ];
-    wants = [ "unbound.service" ];
+    after = [ "wg-subspace-key.service" "nss-lookup.service" ];
+    wants = [ "wg-subspace-key.service" "nss-lookup.service" ];
+    before = [
+      "acme-irc.${homeDomain}.service"
+      "acme-${config.services.nextcloud.hostName}.service"
+      "acme-bitwarden.${homeDomain}.service"
+    ];
+    requiredBy = [
+      "acme-irc.${homeDomain}.service"
+      "acme-${config.services.nextcloud.hostName}.service"
+      "acme-bitwarden.${homeDomain}.service"
+    ];
   };
 
-
-  systemd.services.thelounge = {
-    after = [ "unbound.service" ];
-    wants = [ "unbound.service" ];
+  systemd.services.wireguard-wg-transporter = {
+    after = [ "wg-transporter-key.service" ];
+    wants = [ "wg-transporter-key.service" ];
   };
+
 
   services.thelounge = {
     enable = true;
@@ -132,6 +127,7 @@
       maxHistory = -1;
       reverseProxy = true;
       port = 9000;
+      host = "127.0.0.1";
       defaults = {
         name = "freenode";
         host = "chat.freenode.net";
@@ -145,6 +141,11 @@
     };
   };
 
+  systemd.services.thelounge = {
+    after = [ "nss-lookup.service" "network-online.target" ];
+    wants = [ "nss-lookup.service" "network-online.target" ];
+  };
+
   ##############
   # Data Shares
   ##############
@@ -154,13 +155,43 @@
     samba = {
       enable = true;
       extraConfig = ''
+        # This setting controls the minimum protocol version that the server
+        # will allow the client to use.
         min protocol = SMB2
+
+        # Apple extensions require support for extended attributes(xattr)
+        ea support = yes
+
+        # Load in modules (order is critical!) and enable AAPL extensions
         vfs objects = catia fruit streams_xattr
+
+        # Enable Apple's SMB2+ extension codenamed AAPL
         fruit:aapl = yes
+
+        # Store OS X metadata by passing the stream on to the next module in the
+        # VFS stack (see vfs objects)
         fruit:metadata = stream
-        fruit:model = TimeMachine
+
+        # Defines the model string inside the AAPL extension and will determine
+        # the appearance of the icon representing the Samba server in the Finder
+        # window
+        fruit:model = MacSamba
+
+        ###############
+        # File cleanup
+        ###############
+
+        # Whether to enable POSIX directory rename behaviour for OS X clients.
+        # Without this, directories can't be renamed if any client has any file
+        # inside it (recursive!) open.
         fruit:posix_rename = yes
+
+        # Whether to return zero to queries of on-disk file identifier, if the client has negotiated AAPL.
+        fruit:zero_file_id = yes
+
+
         fruit:veto_appledouble = no
+
         fruit:wipe_intentionally_left_blank_rfork = yes
         fruit:delete_empty_adfiles = yes
       '';
@@ -173,6 +204,16 @@
           "force user" = "satoshi";
           "vfs objects" = "catia fruit streams_xattr";
           "fruit:time machine" = "yes";
+        };
+        samba = {
+          path = "/data";
+          "valid users" = "satoshi";
+          public = "no";
+          writeable = "yes";
+          browseable = "yes";
+          "force user" = "satoshi";
+          "force group" = "users";
+          "vfs objects" = "catia fruit streams_xattr";
         };
       };
     };
@@ -189,27 +230,8 @@
 
   systemd.tmpfiles.rules = [
     "d '${config.services.samba.shares.time-machine.path}' 0755 '${config.services.samba.shares.time-machine."force user"}' '${config.users.users.${config.services.samba.shares.time-machine."force user"}.group}' - -"
-    "d '/export' 0755 'nobody' '${config.users.users.nobody.group}' - -"
-    "d '/data' 0755 'nobody' '${config.users.users.nobody.group}' - -"
+    "d '${config.services.samba.shares.samba.path}' 0755 '${config.services.samba.shares.samba."force user"}' '${config.users.users.${config.services.samba.shares.samba."force user"}.group}' - -"
   ];
-
-  # NFS (Normal data share)
-  fileSystems."/export/data" = {
-    device = "/data";
-    options = [ "bind" ];
-  };
-
-  systemd.services.rpc-statd.enable = pkgs.lib.mkForce false; # No longer needed with NFSv4
-
-  services = {
-    nfs.server = {
-      enable = true;
-      exports = ''
-        /export         *(insecure,rw,sync,no_subtree_check,crossmnt,fsid=0,all_squash)
-        /export/data    *(insecure,rw,sync,no_subtree_check,all_squash)
-      '';
-    };
-  };
 
   # Restic (Linux backup server)
   services.restic.server = {
@@ -217,38 +239,39 @@
     appendOnly = true;
   };
 
-  # Gitea (Self-hosted GitHub)
-  services.gitea = {
+  # Nextcloud
+  services.nextcloud = {
     enable = true;
-    database.passwordFile = config.deployment.keys.gitea-dbpassword.path;
-    domain = "git.${homeDomain}";
-    rootUrl = "https://${config.services.gitea.domain}";
-    extraConfig = ''
-      [server]
-      DISABLE_SSH = true
-    '';
+    hostName = "nextcloud.${homeDomain}";
+    https = true;
+    nginx.enable = true;
+    autoUpdateApps.enable = true;
+    config = {
+      adminuser = "satoshi";
+      adminpassFile = config.deployment.keys.nextcloud-adminpass.path;
+      overwriteProtocol = "https";
+    };
   };
-  users.users.${config.services.gitea.user}.extraGroups = [ "keys" ];
-  systemd.services.gitea = {
-    after = [ "gitea-dbpassword-key.service" ];
-    wants = [ "gitea-dbpassword-key.service" ];
+
+  systemd.services.nextcloud-setup = {
+    after = [ "nextcloud-adminpass-key.service" ];
+    wants = [ "nextcloud-adminpass-key.service" ];
   };
 
   # Unbound
   services.unbound = {
     enable = true;
     allowedAccess = [ "10.42.0.1/24" "127.0.0.1/24" ];
-    interfaces = [ "10.42.0.1" "127.0.0.1" "::1" ];
+    interfaces = [ "0.0.0.0" ];
     extraConfig = ''
       verbosity: 1
 
       do-ip6: no
 
-      local-data: "${config.services.gitea.domain}.  IN A 10.42.0.1"
       local-data: "restic.${homeDomain}.  IN A 10.42.0.1"
       local-data: "bitwarden.${homeDomain}.  IN A 10.42.0.1"
       local-data: "irc.${homeDomain}.  IN A 10.42.0.1"
-      local-data: "${config.services.tt-rss.virtualHost}.  IN A 10.42.0.1"
+      local-data: "${config.services.nextcloud.hostName}.  IN A 10.42.0.1"
     '';
   };
 
@@ -265,11 +288,6 @@
     clientMaxBodySize = "200M";
 
     virtualHosts = {
-      ${config.services.gitea.domain} = {
-        forceSSL = true;
-        enableACME = true;
-        locations."/".proxyPass = "http://127.0.0.1:${toString(config.services.gitea.httpPort)}/";
-      };
       "restic.${homeDomain}" = {
         locations."/".proxyPass = "http://127.0.0.1:8000/";
       };
@@ -279,7 +297,14 @@
         locations."/" = {
           proxyPass = "http://127.0.0.1:${toString(config.services.thelounge.extraConfig.port)}/";
           proxyWebsockets = true;
+          extraConfig = ''
+            proxy_read_timeout 1d;
+          '';
         };
+      };
+      ${config.services.nextcloud.hostName} = {
+        enableACME = true;
+        forceSSL = true;
       };
       "bitwarden.${homeDomain}" = {
         forceSSL = true;
@@ -297,10 +322,6 @@
           };
         };
       };
-      ${config.services.tt-rss.virtualHost} = {
-        forceSSL = true;
-        enableACME = true;
-      };
     };
   };
 
@@ -315,14 +336,6 @@
     };
   };
 
-  # TT-RSS
-  services.tt-rss = {
-    enable = true;
-    selfUrlPath = "https://${config.services.tt-rss.virtualHost}";
-    virtualHost = "rss.${homeDomain}";
-    themePackages = [ pkgs.tt-rss-theme-feedly ];
-  };
-
   # Bitcoin (Bitcoin Core)
   services.bitcoind = {
     enable = true;
@@ -331,14 +344,20 @@
       server=1
       listenonion=0
       rpcauth=satoshi:8f6c93a5e35a6721c949f124d23b7959$$1b802ba3ed81d8c16b0729c233c62ddd7ddb988fe64ece067f130ba451a21d9f
-      rpcbind=0.0.0.0:8332
+      rpcbind=0.0.0.0
+      rpcport=8332
       rpcallowip=10.42.0.0/24
       rpcallowip=127.0.0.1/8
       peerbloomfilters=1
-      bind=0.0.0.0:8333
+      bind=0.0.0.0
+      port=8333
       zmqpubrawblock=tcp://0.0.0.0:28332
       zmqpubrawtx=tcp://0.0.0.0:28333
     '';
+  };
+  systemd.services.bitcoind = {
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
   };
 
   users.users.satoshi = {

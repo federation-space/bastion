@@ -1,6 +1,6 @@
 let
   fetchGitHub = repo: rev: builtins.fetchTarball "https://github.com/${repo}/archive/${rev}.tar.gz";
-  nixpkgs = fetchGitHub "nixos/nixpkgs-channels" "821c7ed030bca86c8217e6d20df1f01c6474adf4";
+  nixpkgs = fetchGitHub "dongcarl/nixpkgs-channels" "9a445e015cbce5e93e8acd2c341b92618d0b2af1";
   nixos-hardware = fetchGitHub "nixos/nixos-hardware" "5575153e2d96efc8caadfc46989b11c6e64454a4";
   pkgs = import nixpkgs {};
 in

@@ -19,10 +19,10 @@
             group = "root";
             permissions = "0400";
           };
-          gitea-dbpassword = {
-            keyFile = secrets/gitea-dbpassword;
-            user = config.services.gitea.user;
-            group = config.users.users.${config.services.gitea.user}.group;
+          nextcloud-adminpass = {
+            keyFile = secrets/nextcloud-adminpass;
+            user = "nextcloud";
+            group = "nginx";
             permissions = "0400";
           };
         };

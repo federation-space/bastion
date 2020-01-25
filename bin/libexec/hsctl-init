@@ -3,7 +3,7 @@ set -eo pipefail
 
 WG_SUBSPACE_KEY_FILE="${WG_SUBSPACE_KEY_FILE:-network/secrets/wg-subspace}"
 WG_TRANSPORTER_KEY_FILE="${WG_TRANSPORTER_KEY_FILE:-network/secrets/wg-transporter}"
-GITEA_DBPASSWORD_FILE="${GITEA_DBPASSWORD_FILE:-network/secrets/gitea-dbpassword}"
+NEXTCLOUD_ADMINPASS_FILE="${NEXTCLOUD_ADMINPASS_FILE:-network/secrets/nextcloud-adminpass}"
 HOME_DOMAIN_FILE="${HOME_DOMAIN_FILE:-network/homeserver/home_domain}"
 ETHER_IP_FILE="${ETHER_IP_FILE:-network/homeserver/ether_iface_ip}"
 ETHER_MAC_FILE="${ETHER_MAC_FILE:-network/homeserver/ether_iface_mac}"
@@ -46,8 +46,8 @@ fi
     if [ ! -e "$WG_SUBSPACE_KEY_FILE" ]; then
         wg genkey > "$WG_SUBSPACE_KEY_FILE"
     fi
-    if [ ! -e "$GITEA_DBPASSWORD_FILE" ]; then
-        apg -m 20 -x 20 -M Ncl -n 1 > "$GITEA_DBPASSWORD_FILE"
+    if [ ! -e "$NEXTCLOUD_ADMINPASS_FILE" ]; then
+        apg -m 20 -x 20 -M Ncl -n 1 > "$NEXTCLOUD_ADMINPASS_FILE"
     fi
 )
 
