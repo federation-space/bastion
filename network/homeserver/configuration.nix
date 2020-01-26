@@ -1,4 +1,4 @@
-{ config, pkgs, wgTransporterPeers, wgSubspaceIP, wgSubspacePort, homeDomain, ... }:
+{ config, pkgs, lib, wgTransporterPeers, wgSubspaceIP, wgSubspacePort, homeDomain, ... }:
 {
   imports =
     [ <nixos-hardware/pcengines/apu>
@@ -27,14 +27,19 @@
   networking.interfaces.enp2s0.useDHCP = true;
   networking.interfaces.enp3s0.useDHCP = true;
 
-  networking.resolvconf.dnsSingleRequest = true;
+  networking.resolvconf = {
+    dnsSingleRequest = true;
+    extraConfig = ''
+      unbound_conf=/var/lib/unbound/unbound-resolvconf.conf
+    '';
+  };
 
   time.timeZone = "UTC";
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-    wget mkpasswd git config.services.samba.package
+    wget mkpasswd git config.services.samba.package dmidecode
     (vim_configurable.customize {
       name = "vim";
       vimrcConfig.packages.myplugins = with vimPlugins; {
@@ -100,8 +105,8 @@
 
   # For resolving federation.space
   systemd.services.wireguard-wg-subspace = {
-    after = [ "wg-subspace-key.service" "nss-lookup.service" ];
-    wants = [ "wg-subspace-key.service" "nss-lookup.service" ];
+    after = [ "wg-subspace-key.service" "nss-lookup.target" ];
+    wants = [ "wg-subspace-key.service" "nss-lookup.target" ];
     before = [
       "acme-irc.${homeDomain}.service"
       "acme-${config.services.nextcloud.hostName}.service"
@@ -142,8 +147,8 @@
   };
 
   systemd.services.thelounge = {
-    after = [ "nss-lookup.service" "network-online.target" ];
-    wants = [ "nss-lookup.service" "network-online.target" ];
+    after = [ "nss-lookup.target" "network-online.target" ];
+    wants = [ "nss-lookup.target" "network-online.target" ];
   };
 
   ##############
@@ -228,6 +233,22 @@
     };
   };
 
+  systemd.services.samba-smbd.unitConfig = {
+    RequiresMountsFor = config.services.samba.shares.time-machine.path;
+  };
+  systemd.services.samba-nmbd.unitConfig = {
+    RequiresMountsFor = config.services.samba.shares.time-machine.path;
+  };
+  systemd.services.samba-winbindd.unitConfig = {
+    RequiresMountsFor = config.services.samba.shares.time-machine.path;
+  };
+
+  fileSystems."${config.services.samba.shares.time-machine.path}" = {
+    device = "${config.services.samba.shares.time-machine.path}.img";
+    fsType = "ext4";
+    options = [ "defaults" "loop" ];
+  };
+
   systemd.tmpfiles.rules = [
     "d '${config.services.samba.shares.time-machine.path}' 0755 '${config.services.samba.shares.time-machine."force user"}' '${config.users.users.${config.services.samba.shares.time-machine."force user"}.group}' - -"
     "d '${config.services.samba.shares.samba.path}' 0755 '${config.services.samba.shares.samba."force user"}' '${config.users.users.${config.services.samba.shares.samba."force user"}.group}' - -"
@@ -236,7 +257,7 @@
   # Restic (Linux backup server)
   services.restic.server = {
     enable = true;
-    appendOnly = true;
+    listenAddress = "127.0.0.1:8000";
   };
 
   # Nextcloud
@@ -251,6 +272,7 @@
       adminpassFile = config.deployment.keys.nextcloud-adminpass.path;
       overwriteProtocol = "https";
     };
+    caching.apcu = true;
   };
 
   systemd.services.nextcloud-setup = {
@@ -267,12 +289,22 @@
       verbosity: 1
 
       do-ip6: no
+      access-control-view: 10.42.0.1/24 "wgview"
 
-      local-data: "restic.${homeDomain}.  IN A 10.42.0.1"
-      local-data: "bitwarden.${homeDomain}.  IN A 10.42.0.1"
-      local-data: "irc.${homeDomain}.  IN A 10.42.0.1"
-      local-data: "${config.services.nextcloud.hostName}.  IN A 10.42.0.1"
+      include: "/var/lib/unbound/unbound-resolvconf.conf"
+
+      view:
+          name: "wgview"
+          local-data: "restic.${homeDomain}.  IN A 10.42.0.1"
+          local-data: "bitwarden.${homeDomain}.  IN A 10.42.0.1"
+          local-data: "irc.${homeDomain}.  IN A 10.42.0.1"
+          local-data: "${config.services.nextcloud.hostName}.  IN A 10.42.0.1"
     '';
+  };
+
+  systemd.services.unbound = {
+    after = [ "network-online.target" "resolvconf.service" ];
+    wants = [ "network-online.target" ];
   };
 
   # Nginx
@@ -285,11 +317,16 @@
     recommendedProxySettings = true;
     recommendedTlsSettings = true;
 
-    clientMaxBodySize = "200M";
+    clientMaxBodySize = "0";
+
+    commonHttpConfig = ''
+      fastcgi_request_buffering off;
+      proxy_buffering off;
+    '';
 
     virtualHosts = {
       "restic.${homeDomain}" = {
-        locations."/".proxyPass = "http://127.0.0.1:8000/";
+        locations."/".proxyPass = "http://${config.services.restic.server.listenAddress}/";
       };
       "irc.${homeDomain}" = {
         forceSSL = true;
@@ -329,8 +366,10 @@
   services.bitwarden_rs = {
     enable = true;
     config = {
+      rocketAddress = "127.0.0.1";
       rocketPort = 8222;
       websocketEnabled = true;
+      websocketAddress = "127.0.0.1";
       websocketPort = 3012;
       domain = "https://bitwarden.${homeDomain}";
     };
@@ -355,6 +394,7 @@
       zmqpubrawtx=tcp://0.0.0.0:28333
     '';
   };
+
   systemd.services.bitcoind = {
     after = [ "network-online.target" ];
     wants = [ "network-online.target" ];

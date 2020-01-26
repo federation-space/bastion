@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -eo pipefail
+set -euo pipefail
 
 WG_SUBSPACE_KEY_FILE="${WG_SUBSPACE_KEY_FILE:-network/secrets/wg-subspace}"
 WG_TRANSPORTER_KEY_FILE="${WG_TRANSPORTER_KEY_FILE:-network/secrets/wg-transporter}"
@@ -10,6 +10,13 @@ ETHER_MAC_FILE="${ETHER_MAC_FILE:-network/homeserver/ether_iface_mac}"
 FEDERATION_IP_FILE="${FEDERATION_IP_FILE:-network/federation/ip}"
 FEDERATION_PORT_FILE="${FEDERATION_PORT_FILE:-network/federation/port}"
 LIBEXEC_DIR="${LIBEXEC_DIR:-$(dirname "${BASH_SOURCE[0]}")}"
+
+NIXOPS_DEPLOYMENT_UUID_FILE="${NIXOPS_DEPLOYMENT_UUID_FILE:-network/deployment_uuid}"
+nix_files=(network/network.nix)
+
+if [ ! -e "$NIXOPS_DEPLOYMENT_UUID_FILE" ]; then
+    nixops create --deployment homeserver "${nix_files[@]}" > "$NIXOPS_DEPLOYMENT_UUID_FILE"
+fi
 
 if [ ! -e "$ETHER_MAC_FILE" ]; then
     echo "Searching for homeservers ARP-able from your ether interfaces..."

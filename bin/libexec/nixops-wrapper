@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+NIXOPS_DEPLOYMENT_UUID_FILE="${NIXOPS_DEPLOYMENT_UUID_FILE:-network/deployment_uuid}"
+NIXOPS_DEPLOYMENT="$(< "$NIXOPS_DEPLOYMENT_UUID_FILE")" exec nixops "$@"

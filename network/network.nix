@@ -6,6 +6,7 @@
     {
       deployment = {
         targetHost = targetHost;
+        storeKeysOnMachine = true;
         keys = {
           wg-subspace = {
             keyFile = secrets/wg-subspace;
@@ -27,5 +28,5 @@
           };
         };
       };
-    } // (import homeserver/configuration.nix { inherit config pkgs wgTransporterPeers wgSubspaceIP wgSubspacePort homeDomain; });
+    } // (import homeserver/configuration.nix { inherit config pkgs lib wgTransporterPeers wgSubspaceIP wgSubspacePort homeDomain; });
 }

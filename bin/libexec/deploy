@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-set -eo pipefail
+set -euo pipefail
 
-DEPLOYMENT="${DEPLOYMENT:-homeserver}"
-nix_files=(network/network.nix)
+NIXOPS_DEPLOYMENT_UUID_FILE="${NIXOPS_DEPLOYMENT_UUID_FILE:-network/deployment_uuid}"
+DEPLOYMENT="$(< "$NIXOPS_DEPLOYMENT_UUID_FILE")"
 
 FEDERATION_IP_FILE="${FEDERATION_IP_FILE:-network/federation/ip}"
 FEDERATION_PORT_FILE="${FEDERATION_PORT_FILE:-network/federation/port}"
@@ -13,10 +13,6 @@ HOME_DOMAIN_FILE="${HOME_DOMAIN_FILE:-network/homeserver/home_domain}"
 LIBEXEC_DIR="${LIBEXEC_DIR:-$(dirname "${BASH_SOURCE[0]}")}"
 CLIENTS_DIR="${CLIENTS_DIR:-network/clients}"
 
-
-if ! nixops info --deployment "$DEPLOYMENT" --no-eval --plain &> /dev/null; then
-    nixops create --deployment "$DEPLOYMENT" "${nix_files[@]}"
-fi
 
 nixops set-args --deployment "$DEPLOYMENT" \
                 --arg wgTransporterPeers "$("$LIBEXEC_DIR"/transporter-peers "$CLIENTS_DIR")" \

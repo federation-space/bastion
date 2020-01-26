@@ -36,6 +36,8 @@ cmd_needs_init() {
 	      pair|add) shift;	"$LIBEXEC_DIR"/pair-client "$@" ;; # $0 NAME
 	      unpair|rm|remove) shift;	"$LIBEXEC_DIR"/rm-client "$@" ;; # $0 NAME
 	      deploy) shift;			"$LIBEXEC_DIR"/deploy "$@" ;;
+	      reboot|info|list|show-arguments|set-args|ssh)			"$LIBEXEC_DIR"/nixops-wrapper "$@" ;;
+	      # ssh) 		    "$LIBEXEC_DIR"/nixops-wrapper "$@" homeserver ;;
 	      *)				cmd_usage "$@" ; exit 42 ;;
     esac
 }
