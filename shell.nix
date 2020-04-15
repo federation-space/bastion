@@ -26,7 +26,6 @@ pkgs.stdenv.mkDerivation rec {
 
   shellHook = ''
     export NIX_PATH="nixpkgs=${nixpkgs}:nixos-hardware=${nixos-hardware}"
-    export NIXOPS_DEPLOYMENT=homeserver
     export PATH="''${PWD}/bin:''${PATH}"
     # ssh-agent and nixops don't play well together (see
     # https://github.com/NixOS/nixops/issues/256). I'm getting `Received disconnect
