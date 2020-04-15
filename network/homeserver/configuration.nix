@@ -226,6 +226,7 @@
     avahi = {
       enable = true;
       nssmdns = true;
+      domainName = "homeserver.local";
       publish = {
         enable = true;
         userServices = true;
