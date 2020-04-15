@@ -27,6 +27,7 @@
   networking.interfaces.enp1s0.useDHCP = true;
 
   networking.resolvconf = {
+    useLocalResolver = false;
     dnsSingleRequest = true;
     extraConfig = ''
       unbound_conf=/var/lib/unbound/unbound-resolvconf.conf
@@ -282,22 +283,19 @@
   # Unbound
   services.unbound = {
     enable = true;
-    allowedAccess = [ "10.42.0.1/24" "127.0.0.1/24" ];
+    allowedAccess = [ "10.42.0.1/24" ];
     interfaces = [ "0.0.0.0" ];
     extraConfig = ''
       verbosity: 1
 
       do-ip6: no
-      access-control-view: 10.42.0.1/24 "wgview"
+
+      local-data: "restic.${homeDomain}.  IN A 10.42.0.1"
+      local-data: "bitwarden.${homeDomain}.  IN A 10.42.0.1"
+      local-data: "irc.${homeDomain}.  IN A 10.42.0.1"
+      local-data: "${config.services.nextcloud.hostName}.  IN A 10.42.0.1"
 
       include: "/var/lib/unbound/unbound-resolvconf.conf"
-
-      view:
-          name: "wgview"
-          local-data: "restic.${homeDomain}.  IN A 10.42.0.1"
-          local-data: "bitwarden.${homeDomain}.  IN A 10.42.0.1"
-          local-data: "irc.${homeDomain}.  IN A 10.42.0.1"
-          local-data: "${config.services.nextcloud.hostName}.  IN A 10.42.0.1"
     '';
   };
 
