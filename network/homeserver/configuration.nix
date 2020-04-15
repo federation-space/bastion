@@ -23,9 +23,8 @@
 
   networking.hostName = "homeserver"; # Define your hostname.
 
+  networking.useDHCP = false;
   networking.interfaces.enp1s0.useDHCP = true;
-  networking.interfaces.enp2s0.useDHCP = true;
-  networking.interfaces.enp3s0.useDHCP = true;
 
   networking.resolvconf = {
     dnsSingleRequest = true;
